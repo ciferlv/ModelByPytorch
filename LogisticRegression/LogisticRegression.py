@@ -5,6 +5,7 @@ import torch
 from sklearn import datasets
 import numpy as np
 import math
+import os
 
 
 class LogisticRegression(nn.Module):
@@ -15,6 +16,14 @@ class LogisticRegression(nn.Module):
     def forward(self, input):
         self.output = F.sigmoid(self.linear(input))
         return self.output
+
+
+def saveModel(modelObject, filePath):
+    torch.save(modelObject.state_dict(), filePath)
+
+
+def loadModel(modelObject, filePath):
+    modelObject.load_state_dict(torch.load(filePath))
 
 
 def load_data():
@@ -34,40 +43,43 @@ def load_data():
 
 
 if __name__ == "__main__":
-
+    modelFilePath = "./lg.tar"
+    lg = LogisticRegression(2)
     shuffled_data = load_data()
     # 4/5 data for training, 1/5 data for testing.
     split_point = int(len(shuffled_data) * 4 / 5)
 
-    epoch = 1000
-    mini_batch = 10
+    if os.path.isfile(modelFilePath):
+        loadModel(lg, modelFilePath)
+    else:
+        epoch = 1000
+        mini_batch = 10
 
-    lg = LogisticRegression(2)
-    criterion = nn.BCELoss()
-    optimizer = optim.Adam(lg.parameters())
+        criterion = nn.BCELoss()
+        optimizer = optim.Adam(lg.parameters())
 
-    for idx_epoch in range(epoch):
-        update_times = math.ceil(split_point / mini_batch)
-        for idx in range(update_times):
-            if idx == update_times - 1:
-                train_data = np.array(shuffled_data[idx * mini_batch:split_point])
-            else:
-                train_data = np.array(shuffled_data[idx * mini_batch:(idx + 1) * mini_batch])
+        for idx_epoch in range(epoch):
+            update_times = math.ceil(split_point / mini_batch)
+            for idx in range(update_times):
+                if idx == update_times - 1:
+                    train_data = np.array(shuffled_data[idx * mini_batch:split_point])
+                else:
+                    train_data = np.array(shuffled_data[idx * mini_batch:(idx + 1) * mini_batch])
 
-            x = torch.Tensor(list(train_data[:, 0]))
-            y = torch.Tensor(list(train_data[:, 1]))
-            criterion.weight = torch.Tensor(list(train_data[:, 2]))
+                x = torch.Tensor(list(train_data[:, 0]))
+                y = torch.Tensor(list(train_data[:, 1]))
+                criterion.weight = torch.Tensor(list(train_data[:, 2]))
 
-            optimizer.zero_grad()
-            loss = criterion(lg(x), y)
-            loss.backward()
-            optimizer.step()
-            print("Epoch: {} MiniBatch: {} Loss: {}".format(idx_epoch, idx, loss.item()))
-
+                optimizer.zero_grad()
+                loss = criterion(lg(x), y)
+                loss.backward()
+                optimizer.step()
+                print("Epoch: {} MiniBatch: {} Loss: {}".format(idx_epoch, idx, loss.item()))
+        saveModel(lg, modelFilePath)
     # test
     test_data = np.array(shuffled_data[split_point:])
-    x = torch.Tensor(list(test_data[:,0]))
-    y = np.array(list(test_data[:,1]))
+    x = torch.Tensor(list(test_data[:, 0]))
+    y = np.array(list(test_data[:, 1]))
     predicated_y = (lg(x).squeeze(-1).detach().numpy() > 0.5) * 1
     precision = np.sum((y == predicated_y) * 1) / (len(shuffled_data) - split_point)
     print(y)
