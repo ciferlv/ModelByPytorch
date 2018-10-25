@@ -69,7 +69,7 @@ def train_GAN():
     criterion = torch.nn.BCELoss()
     D_steps = 1
     G_steps = 1
-    epoch = 30000
+    epoch = 10000
     mean_list = []
     std_list = []
     for epoch_i in range(epoch):
