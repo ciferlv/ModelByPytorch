@@ -12,6 +12,7 @@ util = Util()
 # (name, preprocess, d_input_func) = ("Raw data", lambda data: data, lambda x: x)
 (name, preprocess, d_input_func) = ("Data and variances", lambda data: decorate_with_diffs(data, 2.0), lambda x: x * 2)
 
+
 class Discriminator(nn.Module):
     def __init__(self, input_size, output_size, hidden_size):
         super(Discriminator, self).__init__()
@@ -47,11 +48,13 @@ def normal_sampler_function():
 def uniform_sampler_function():
     return lambda m, n: torch.rand(m, n)
 
+
 def decorate_with_diffs(data, exponent):
     mean = torch.mean(data.data, 1, keepdim=True)
     mean_broadcast = torch.mul(torch.ones(data.size()), mean.tolist()[0][0])
     diffs = torch.pow(data - torch.Tensor(mean_broadcast), exponent)
     return torch.cat([data, diffs], 1)
+
 
 def train_GAN():
     d_input_size = 100
@@ -72,11 +75,12 @@ def train_GAN():
     epoch = 10000
     mean_list = []
     std_list = []
+
     for epoch_i in range(epoch):
         print("Epoch: {}".format(epoch_i))
         for d_i in range(D_steps):
             # train on real
-            D.zero_grad()
+            D.zero_grad()#clear gradient
             train_x_real = torch.Tensor(normal_sampler(1, d_input_size))
             train_y_real = torch.ones(1)
             output = D(preprocess(train_x_real))
@@ -106,18 +110,25 @@ def train_GAN():
     util.plot_scatter_diagram("Mean by epoch.", "Epoch", "Mean", np.arange(len(mean_list)), mean_list)
     util.plot_scatter_diagram("Std by epoch.", "Epoch", "Std", np.arange(len(std_list)), std_list)
 
+    noise_data = uniform_sampler(20000, 1)
+    generated_uniform = G(noise_data)
+    generated_uniform_list = util.tensor_to_list(generated_uniform, flatten=True)
+    generated_uniform_list = util.tensor_to_list(generated_uniform, flatten=True)
+    util.plot_normal_histogram(np.array(generated_uniform_list), (0, 8))
+    print("Mean {}.".format(np.mean(generated_uniform_list)))
+    print("Std {}.".format(np.std(generated_uniform_list)))
 
 def test_Discriminator():
     posi_x = np.random.normal(loc=4, scale=1.25, size=(1000, 5))
     posi_y = np.ones(posi_x.shape[0])
-    nege_x = np.random.uniform(0, 1, 1000, 5)
+    nege_x = np.random.uniform(0, 1, (1000, 5))
     nege_y = np.zeros(nege_x.shape[0])
 
     x = np.append(posi_x, nege_x, axis=0)
     y = np.append(posi_y, nege_y)
     train_x, test_x, train_y, test_y = train_test_split(x, y, test_size=0.25, shuffle=True)
 
-    d = Discriminator(5, 1)
+    d = Discriminator(5, 1,50)
     criterion = torch.nn.BCELoss()
     optimizer = optim.Adam(d.parameters())
     mini_batch = 50

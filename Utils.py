@@ -2,6 +2,7 @@ import numpy as np
 import math
 import matplotlib.pyplot as plt
 
+
 class Util:
     def shuffle_x_y(self, x, y):
         temp = list(zip(np.array(x), np.array(y)))
@@ -28,20 +29,26 @@ class Util:
         return np.array(x_splited), np.array(y_splited)
 
     def tensor_to_array(self, t):
-        t.detach().numpy()
+        return t.detach().numpy()
 
     def tensor_to_list(self, t, flatten):
         if not flatten:
-            t.detach().tolist()
+            return t.detach().tolist()
         else:
-            t.data.storage().tolist()
+            return t.data.storage().tolist()
 
     def plot_scatter_diagram(self, title, x_label, y_label, x, y):
-        plt.scatter(x,y)
+        plt.scatter(x, y)
         plt.xlabel(x_label)
         plt.ylabel(y_label)
         plt.title(title)
         plt.show()
+
+    def plot_normal_histogram(self, x, range):
+        plt.hist(x, range=range)
+        plt.show()
+
+
 
 
 if __name__ == "__main__":
