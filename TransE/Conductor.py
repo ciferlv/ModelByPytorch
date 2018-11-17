@@ -1,7 +1,7 @@
-from TransE.Triple import Triple, Path
+from Unit import Triple, Path
 
 
-class Conductor:
+class Data2IDX:
     def __init__(self, folder):
         self.folder = folder
         self.train_file = folder + "train.txt"
@@ -52,27 +52,28 @@ class Conductor:
                 self.idx2r[rIdx] = rName
                 self.r2idx[rName] = int(rIdx)
 
-    def load_data(self,file_path):
-        triple_list = []
-        head_set = set()
-        relation_set = set()
-        tail_set = set()
-        triple_dict = {}
-        with open(file_path, "r", encoding="UTF-8") as f:
+    def triple2idx(self, triple_file, output_file):
+        triple_idx_list = []
+        with open(triple_file, "r", encoding="UTF-8") as f:
             for line in f.readlines():
                 head, relation, tail = line.strip().split()
                 hidx = self.e2idx[head]
                 ridx = self.r2idx[relation]
                 tidx = self.e2idx[tail]
-                head_set.add(hidx)
-                tail_set.add(tidx)
-                relation_set.add(ridx)
-                if head not in triple_dict:
-                    triple_dict[hidx] = Triple(hidx)
-                triple_dict[hidx].add_path(path=Path(ridx, tidx))
-                triple_list.append([hidx, ridx, tidx])
-        return triple_list, triple_dict, list(head_set), list(tail_set), list(relation_set)
+                triple_idx_list.append([hidx, ridx, tidx])
+        with open(output_file, "w", encoding="UTF-8") as f:
+            for triple_idx in triple_idx_list:
+                f.write("{}\t{}\t{}\n".format(triple_idx[0], triple_idx[1], triple_idx[2]))
 
-    def process(self):
+    def er2idx(self):
         self.data2idx([self.train_file, self.valid_file, self.test_file])
         self.load_e_r_idx()
+
+
+if __name__ == "__main__":
+    folder = "./data/FB15k-237/"
+    data2idx = Data2IDX(folder)
+    # data2idx.er2idx()
+    data2idx.load_e_r_idx()
+    data2idx.triple2idx(folder + "test.txt", folder + "test_idx.txt")
+
