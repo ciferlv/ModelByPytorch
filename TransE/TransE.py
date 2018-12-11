@@ -63,7 +63,7 @@ class TransE(nn.Module):
         for i in range(predicated_t_tensor.shape[0]):
             distance = torch.norm(predicated_t_tensor[i] - e_tensor, 2, -1, False)
             t_dis = distance[t_idx_list[i]]
-            posi = torch.sum(distance<t_dis,-1)
+            posi = torch.sum(distance < t_dis, -1)
             if posi < 9:
                 hits10 += 1
         # t_idx_predicated = torch.argmin(distance, -1)
@@ -118,7 +118,7 @@ def isValid(head, relation, tail, triple_dict):
 
 
 def train(triple_list, train_dict, train_head_set, train_tail_set, model):
-    optimizer = torch.optim.Adam(te.parameters())
+    optimizer = torch.optim.Adam(model.parameters())
     entity_list = list(train_head_set | train_tail_set)
     epoch = 50
     minibatch = 1000
@@ -156,16 +156,16 @@ def train(triple_list, train_dict, train_head_set, train_tail_set, model):
                             nege_head_list.append(h_idx)
                             break
             model.zero_grad()
-            loss = te.trainModel(posi_head_list=posi_head_list, posi_tail_list=posi_tail_list,
-                                 nege_head_list=nege_head_list,
-                                 nege_tail_list=nege_tail_list, r_list=rela_list)
+            loss = model.trainModel(posi_head_list=posi_head_list, posi_tail_list=posi_tail_list,
+                                    nege_head_list=nege_head_list,
+                                    nege_tail_list=nege_tail_list, r_list=rela_list)
             loss_running += loss.item()
             loss.backward()
             optimizer.step()
         print("Epoch: {}, Loss: {}".format(epoch_i, loss_running))
 
 
-if __name__ == "__main__":
+def train_test_FB15L_237():
     folder = "./data/FB15K-237/"
     train_idx_file = folder + "train_idx.txt"
     valid_idx_file = folder + "valid_idx.txt"
@@ -192,3 +192,22 @@ if __name__ == "__main__":
         print("Round {}.".format(round))
         train(train_triple_list, train_triple_dict, train_h_set, train_t_set, te)
         te.predict_tail_and_hits10(valid_h_idx_list, valid_r_idx_list, valid_t_idx_list, list(range(len(e2idx.keys()))))
+
+
+def train_on_DBO():
+    folder = "F:\\Data\\dbpedia\\"
+    train_idx_file = folder + "triple2idx.txt"
+    e2idx_file = folder + "e2idx_shortcut.txt"
+    r2idx_file = folder + "r2idx_shortcut.txt"
+
+    e2idx, r2idx, train_h_set, train_t_set, train_triple_list, train_triple_dict = load_data(train_idx_file, e2idx_file,
+                                                                                             r2idx_file)
+    te = TransE(50, len(e2idx.keys()), len(r2idx), 1)
+
+    for round in range(20):
+        print("Round {}.".format(round))
+        train(train_triple_list, train_triple_dict, train_h_set, train_t_set, te)
+
+
+if __name__ == "__main__":
+    train_on_DBO()
