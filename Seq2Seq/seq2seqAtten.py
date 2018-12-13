@@ -111,6 +111,9 @@ def prepareData(lang1, lang2, reverse=False):
     return input_lang, output_lang, pairs
 
 
+# Above is to prepare train data.
+
+#encoder
 class Encoder(nn.Module):
     def __init__(self, input_size, hidden_size):
         super(Encoder, self).__init__()
@@ -127,7 +130,7 @@ class Encoder(nn.Module):
     def init_hidden(self):
         return torch.zeros(1, 1, self.hidden_size, device=device)
 
-
+#decoder without attention
 class Decoder(nn.Module):
     def __init__(self, input_size, hidden_size):
         super(Decoder, self).__init__()
@@ -154,7 +157,7 @@ def sentence2index(lang, sentence):
     idx_list.append(EOS_token)
     return idx_list
 
-
+# Decoder without attention
 class AttenDecoder(nn.Module):
     def __init__(self, word_size, hidden_size, drop_p, max_length):
         super(AttenDecoder, self).__init__()
@@ -178,7 +181,7 @@ class AttenDecoder(nn.Module):
         gru_input = F.relu(gru_input)
         gru_output, gru_hidden = self.gru(gru_input, hidden)
 
-        out_prob = F.log_softmax(self.out(gru_hidden[0]),dim=1)
+        out_prob = F.log_softmax(self.out(gru_hidden[0]), dim=1)
         return gru_hidden, out_prob
 
 
@@ -195,7 +198,7 @@ def train_attention(encoder, decoder, encoder_optim, decoder_optim, pair, input_
     hidden = encoder.init_hidden()
     encoder_outputs = torch.zeros(max_length, hidden_size, device=device)
 
-    for cnt,word_idx in enumerate(source_idx_list):
+    for cnt, word_idx in enumerate(source_idx_list):
         encoder_input = torch.LongTensor([word_idx], device=device)
         output, hidden = encoder.forward(encoder_input, hidden_tensor=hidden)
         encoder_outputs[cnt] = output
@@ -212,7 +215,7 @@ def train_attention(encoder, decoder, encoder_optim, decoder_optim, pair, input_
 
     return loss.item() / len(target_idx_list)
 
-
+# complete train process to train Encoder and Decoder with Attention
 def trainIter():
     epoch = 200
     input_lang, output_lang, pairs = prepareData('eng', 'fra', True)
@@ -237,34 +240,41 @@ def trainIter():
                 cnt = 0
 
 
+def train_without_attention():
+    input_lang, output_lang, pairs = prepareData('eng', 'fra', True)
+
+    encoder = Encoder(input_lang.n_words, 50)
+    decoder = Decoder(output_lang.n_words, 50)
+    encoder_optimizer = optim.Adam(encoder.parameters())
+    decoder_optimizer = optim.Adam(decoder.parameters())
+
+    criterion = torch.nn.NLLLoss()
+    for one_pair in pairs:
+        encoder.zero_grad()
+        decoder.zero_grad()
+        loss = 0
+        input_idx = sentence2index(input_lang, one_pair[0])
+        output_idx = sentence2index(output_lang, one_pair[1])
+        input_hidden_tensor = encoder.init_hidden()
+        for idx in input_idx:
+            idx_tensor = torch.LongTensor([idx], device=device)
+            output_tensor, input_hidden_tensor = encoder.forward(idx_tensor, hidden_tensor=input_hidden_tensor)
+
+        idx_tensor = torch.LongTensor([SOS_token], device=device)
+        for idx in output_idx:
+            input_hidden_tensor, out_prob = decoder.forward(idx_tensor, input_hidden_tensor)
+            loss += criterion(out_prob, torch.LongTensor([idx], device=device))
+            idx_tensor = torch.LongTensor([idx], device=device)
+
+        loss.backward()
+        print("Loss: {}.".format(loss.item() / len(output_idx)))
+        encoder_optimizer.step()
+        decoder_optimizer.step()
+
+
 if __name__ == "__main__":
+    #Attention
     trainIter()
-    # input_lang, output_lang, pairs = prepareData('eng', 'fra', True)
-    #
-    # encoder = Encoder(input_lang.n_words, 50)
-    # decoder = Decoder(output_lang.n_words, 50)
-    # encoder_optimizer = optim.Adam(encoder.parameters())
-    # decoder_optimizer = optim.Adam(decoder.parameters())
-    #
-    # criterion = torch.nn.NLLLoss()
-    # for one_pair in pairs:
-    #     encoder.zero_grad()
-    #     decoder.zero_grad()
-    #     loss = 0
-    #     input_idx = sentence2index(input_lang, one_pair[0])
-    #     output_idx = sentence2index(output_lang, one_pair[1])
-    #     input_hidden_tensor = encoder.init_hidden()
-    #     for idx in input_idx:
-    #         idx_tensor = torch.LongTensor([idx], device=device)
-    #         output_tensor, input_hidden_tensor = encoder.forward(idx_tensor, hidden_tensor=input_hidden_tensor)
-    #
-    #     idx_tensor = torch.LongTensor([SOS_token], device=device)
-    #     for idx in output_idx:
-    #         input_hidden_tensor, out_prob = decoder.forward(idx_tensor, input_hidden_tensor)
-    #         loss += criterion(out_prob, torch.LongTensor([idx], device=device))
-    #         idx_tensor = torch.LongTensor([idx], device=device)
-    #
-    #     loss.backward()
-    #     print("Loss: {}.".format(loss.item() / len(output_idx)))
-    #     encoder_optimizer.step()
-    #     decoder_optimizer.step()
+
+    #With out Attention
+    # train_without_attention()
