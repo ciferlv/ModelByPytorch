@@ -115,11 +115,11 @@ def prepareData(lang1, lang2, reverse=False):
 
 #encoder
 class Encoder(nn.Module):
-    def __init__(self, input_size, hidden_size):
+    def __init__(self, word_size, hidden_size):
         super(Encoder, self).__init__()
         self.hidden_size = hidden_size
 
-        self.embedding = torch.nn.Embedding(input_size, hidden_size)
+        self.embedding = torch.nn.Embedding(word_size, hidden_size)
         self.gru = torch.nn.GRU(hidden_size, hidden_size)
 
     def forward(self, input_tensor, hidden_tensor):
@@ -132,13 +132,13 @@ class Encoder(nn.Module):
 
 #decoder without attention
 class Decoder(nn.Module):
-    def __init__(self, input_size, hidden_size):
+    def __init__(self, word_size, hidden_size):
         super(Decoder, self).__init__()
         self.hidden_size = hidden_size
 
-        self.embedding = torch.nn.Embedding(input_size, hidden_size)
+        self.embedding = torch.nn.Embedding(word_size, hidden_size)
         self.gru = torch.nn.GRU(hidden_size, hidden_size)
-        self.out = torch.nn.Linear(hidden_size, input_size)
+        self.out = torch.nn.Linear(hidden_size, word_size)
         self.softmax = torch.nn.LogSoftmax(dim=-1)
 
     def forward(self, input_tensor, hidden_tensor):
