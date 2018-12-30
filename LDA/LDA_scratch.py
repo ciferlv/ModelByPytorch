@@ -1,6 +1,7 @@
 import nltk
 import nltk.stem
 import numpy as np
+import os
 from gensim.corpora import Dictionary
 from gensim.models import LdaModel
 from nltk.corpus import stopwords
@@ -129,8 +130,9 @@ def lda_scratch(topic_num, alpha, beta, passes):
 
 
 if __name__ == "__main__":
+    print(os.path.abspath(__file__))
     # reform_data()
-    my_lda_learn(5)
+    # my_lda_learn(5)
     # lda_sklearn(10)
     # lda_sklearn(20)
     # lda_scratch(5, 0.5, 0.5, 20)
